@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Forex Position Size Calculator (EUR)</title>
+<meta name="description" content="Free forex position size calculator for EUR accounts. Work out lot size from your account balance, risk per trade and stop loss in pips.">
+<style>
+  :root {
+    --bg: #f5f7fa;
+    --card: #ffffff;
+    --text: #1d2433;
+    --muted: #5b6577;
+    --border: #d9dfe8;
+    --accent: #1f6feb;
+    --accent-text: #ffffff;
+    --ok: #1a7f37;
+    --warn: #9a6700;
+    --bad: #cf222e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1420;
+      --card: #171e2e;
+      --text: #e6ebf3;
+      --muted: #9aa5b8;
+      --border: #2a3448;
+      --accent: #4c8dff;
+      --accent-text: #0b1220;
+      --ok: #3fb950;
+      --warn: #d29922;
+      --bad: #f85149;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1420;
+    --card: #171e2e;
+    --text: #e6ebf3;
+    --muted: #9aa5b8;
+    --border: #2a3448;
+    --accent: #4c8dff;
+    --accent-text: #0b1220;
+    --ok: #3fb950;
+    --warn: #d29922;
+    --bad: #f85149;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 1.6rem; margin: 0 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 20px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .grid { display: grid; gap: 14px; grid-template-columns: 1fr; }
+  @media (min-width: 560px) { .grid { grid-template-columns: 1fr 1fr; } }
+  label { display: block; font-weight: 600; font-size: 0.92rem; margin-bottom: 4px; }
+  .hint { display: block; font-weight: 400; color: var(--muted); font-size: 0.82rem; margin-top: 3px; }
+  input, select {
+    width: 100%;
+    padding: 10px 12px;
+    font: inherit;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .results { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+  .stat { background: var(--bg); border-radius: 10px; padding: 12px 14px; }
+  .stat .k { color: var(--muted); font-size: 0.82rem; }
+  .stat .v { font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .stat.main { grid-column: 1 / -1; border: 2px solid var(--accent); }
+  .stat.main .v { font-size: 1.9rem; color: var(--accent); }
+  .msg { margin: 12px 0 0; font-size: 0.92rem; }
+  .msg.warn { color: var(--warn); }
+  .msg.bad { color: var(--bad); }
+  .msg.ok { color: var(--ok); }
+  h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  details { font-size: 0.92rem; color: var(--muted); }
+  details summary { cursor: pointer; color: var(--text); font-weight: 600; }
+  details p { margin: 8px 0 0; }
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 24px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Position Size Calculator</h1>
+  <p class="lead">Work out how many lots to trade so that a stop loss costs you only the percentage of your account you decided to risk. Built for EUR accounts.</p>
+
+  <section class="card">
+    <h2>1. Your trade</h2>
+    <div class="grid">
+      <div>
+        <label for="balance">Account balance (EUR)</label>
+        <input id="balance" type="number" min="0" step="any" inputmode="decimal" value="10000">
+      </div>
+      <div>
+        <label for="risk">Risk per trade (%)</label>
+        <input id="risk" type="number" min="0" step="any" inputmode="decimal" value="1">
+      </div>
+      <div>
+        <label for="stop">Stop loss (pips)</label>
+        <input id="stop" type="number" min="0" step="any" inputmode="decimal" value="20">
+      </div>
+      <div>
+        <label for="quote">Quote currency of the pair</label>
+        <select id="quote">
+          <option value="EUR">EUR (e.g. EUR/GBP)</option>
+          <option value="USD" selected>USD (e.g. EUR/USD, GBP/USD)</option>
+          <option value="GBP">GBP (e.g. EUR/GBP)</option>
+          <option value="CHF">CHF (e.g. EUR/CHF)</option>
+          <option value="JPY">JPY (e.g. EUR/JPY, USD/JPY)</option>
+        </select>
+      </div>
+      <div id="rateField">
+        <label for="rate">Exchange rate: 1 EUR = ? <span id="rateUnit">USD</span> <span class="hint">Update it to the current price of the pair. Not needed for EUR.</span></label>
+        <input id="rate" type="number" min="0" step="any" inputmode="decimal" value="1.08">
+      </div>
+      <div>
+        <label for="lotType">Lot size</label>
+        <select id="lotType">
+          <option value="100000" selected>Standard (100,000 units)</option>
+          <option value="10000">Mini (10,000 units)</option>
+          <option value="1000">Micro (1,000 units)</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Result</h2>
+    <div class="results">
+      <div class="stat main">
+        <div class="k">Position size</div>
+        <div class="v" id="outLots">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Units of base currency</div>
+        <div class="v" id="outUnits">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Amount at risk (EUR)</div>
+        <div class="v" id="outRisk">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Value of 1 pip per lot (EUR)</div>
+        <div class="v" id="outPip">-</div>
+      </div>
+      <div class="stat">
+        <div class="k">Actual risk after rounding</div>
+        <div class="v" id="outActual">-</div>
+      </div>
+    </div>
+    <p class="msg" id="msg"></p>
+  </section>
+
+  <section class="card">
+    <h2>3. Optional: reward check</h2>
+    <div class="grid">
+      <div>
+        <label for="tp">Take profit (pips)</label>
+        <input id="tp" type="number" min="0" step="any" inputmode="decimal" value="40">
+      </div>
+      <div>
+        <label>Reward : risk</label>
+        <div class="stat"><div class="v" id="outRR">-</div></div>
+      </div>
+    </div>
+    <p class="msg" id="rrNote"></p>
+  </section>
+
+  <section class="card">
+    <details>
+      <summary>How the calculation works</summary>
+      <p>
+        Risk in EUR = balance × risk %.<br>
+        Units = (risk in EUR × rate) ÷ (stop in pips × pip size), where the pip size is 0.0001 for most pairs and 0.01 when the quote currency is JPY.<br>
+        Lots = units ÷ lot size. The lot size is rounded down to 0.01 so you never risk more than planned.
+      </p>
+      <p>
+        Assumes a standard forex pair with 4 decimals (or 2 for JPY pairs). It does not cover indices, metals, crypto or commissions, and it does not account for spread or slippage. Your broker may use different contract sizes or minimum lots.
+      </p>
+    </details>
+  </section>
+
+  <footer>
+    This tool is for education and planning only. It is not financial advice and does not guarantee any result. Trading forex and leveraged products carries a high risk of losing your capital.
+  </footer>
+</main>
+
+<script>
+/* calc:start */
+// Pure calculation, kept free of DOM code so it can be tested.
+function calculatePosition(input) {
+  const { balance, riskPct, stopPips, pipSize, rate, contractSize, lotStep = 0.01 } = input;
+  const riskEur = balance * (riskPct / 100);
+  const rawUnits = (riskEur * rate) / (stopPips * pipSize);
+  const rawLots = rawUnits / contractSize;
+  // Round lots down to the lot step so the risk never exceeds the plan.
+  const lots = Math.floor(rawLots / lotStep + 1e-9) * lotStep;
+  const units = lots * contractSize;
+  const pipValuePerLotEur = (contractSize * pipSize) / rate;
+  const actualRiskEur = units * stopPips * pipSize / rate;
+  return { riskEur, lots, units, pipValuePerLotEur, actualRiskEur, rawLots };
+}
+/* calc:end */
+
+const $ = (id) => document.getElementById(id);
+const num = (id) => parseFloat($(id).value);
+
+const defaultRates = { EUR: 1, USD: 1.08, GBP: 0.85, CHF: 0.95, JPY: 160 };
+
+function fmt(value, digits = 2) {
+  return Number.isFinite(value) ? value.toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits }) : "-";
+}
+
+function setMsg(text, cls) {
+  const el = $("msg");
+  el.textContent = text || "";
+  el.className = "msg " + (cls || "");
+}
+
+function update() {
+  const quote = $("quote").value;
+  const rateField = $("rateField");
+  $("rateUnit").textContent = quote;
+  rateField.style.display = quote === "EUR" ? "none" : "";
+
+  const rate = quote === "EUR" ? 1 : num("rate");
+  const pipSize = quote === "JPY" ? 0.01 : 0.0001;
+  const contractSize = parseFloat($("lotType").value);
+  const balance = num("balance");
+  const riskPct = num("risk");
+  const stopPips = num("stop");
+  const tpPips = num("tp");
+
+  const valid = balance > 0 && riskPct > 0 && stopPips > 0 && rate > 0;
+  if (!valid) {
+    ["outLots", "outUnits", "outRisk", "outPip", "outActual", "outRR"].forEach((id) => ($(id).textContent = "-"));
+    setMsg("Enter a balance, a risk % and a stop loss above zero.", "bad");
+    return;
+  }
+
+  const r = calculatePosition({ balance, riskPct, stopPips, pipSize, rate, contractSize });
+
+  $("outLots").textContent = fmt(r.lots) + " lots";
+  $("outUnits").textContent = fmt(r.units, 0);
+  $("outRisk").textContent = "€" + fmt(r.riskEur);
+  $("outPip").textContent = "€" + fmt(r.pipValuePerLotEur);
+  $("outActual").textContent = "€" + fmt(r.actualRiskEur);
+
+  if (r.lots < 0.01) {
+    setMsg("This trade is too small for your account at this risk level. Reduce the stop loss or increase the risk %, or use a smaller lot size.", "bad");
+  } else if (riskPct > 2) {
+    setMsg("Risking more than 2% per trade is high for most traders. Check that this is intended.", "warn");
+  } else {
+    setMsg("Lot size rounded down to 0.01, so the actual risk is at or below your plan.", "ok");
+  }
+
+  if (tpPips > 0) {
+    const rr = tpPips / stopPips;
+    $("outRR").textContent = "1 : " + fmt(rr, 2);
+    const profit = r.units * tpPips * pipSize / rate;
+    const note = rr >= 1
+      ? "If the target is hit, the gain would be about €" + fmt(profit) + ". Reward and risk are both estimates; spread and slippage will change the real result."
+      : "Reward is smaller than risk. Many traders need a high win rate to make this worthwhile.";
+    $("rrNote").textContent = note;
+  } else {
+    $("outRR").textContent = "-";
+    $("rrNote").textContent = "";
+  }
+}
+
+// When the quote currency changes, suggest a rate you should still check.
+$("quote").addEventListener("change", () => {
+  $("rate").value = defaultRates[$("quote").value];
+  update();
+});
+document.querySelectorAll("input, select").forEach((el) => el.addEventListener("input", update));
+document.querySelectorAll("select").forEach((el) => el.addEventListener("change", update));
+update();
+</script>
+</body>
+</html>
