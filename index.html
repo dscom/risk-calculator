@@ -353,7 +353,7 @@ $("signupForm").addEventListener("submit", async (event) => {
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     $("signupForm").reset();
-    formMsg("Thanks! Please check your inbox.", "ok");
+    formMsg("Thanks! You are on the list.", "ok");
   } catch (err) {
     formMsg("Something went wrong. Please try again in a moment.", "bad");
   } finally {
