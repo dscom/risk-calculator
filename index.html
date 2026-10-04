@@ -86,6 +86,21 @@
   .msg.bad { color: var(--bad); }
   .msg.ok { color: var(--ok); }
   h2 { font-size: 1.05rem; margin: 0 0 12px; }
+  .rate-alert { background: var(--bg); border-radius: 8px; padding: 10px 12px; margin: 8px 0 0; }
+  .lead-small { color: var(--muted); font-size: 0.92rem; margin: 0 0 14px; }
+  .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 400; font-size: 0.9rem; color: var(--muted); margin: 14px 0; }
+  .check input { width: auto; margin-top: 4px; }
+  button {
+    padding: 10px 18px;
+    font: inherit;
+    font-weight: 600;
+    color: var(--accent-text);
+    background: var(--accent);
+    border: 0;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
   details { font-size: 0.92rem; color: var(--muted); }
   details summary { cursor: pointer; color: var(--text); font-weight: 600; }
   details p { margin: 8px 0 0; }
@@ -123,8 +138,9 @@
         </select>
       </div>
       <div id="rateField">
-        <label for="rate">Exchange rate: 1 EUR = ? <span id="rateUnit">USD</span> <span class="hint">Update it to the current price of the pair. Not needed for EUR.</span></label>
+        <label for="rate">Exchange rate: 1 EUR = ? <span id="rateUnit">USD</span></label>
         <input id="rate" type="number" min="0" step="any" inputmode="decimal" value="1.08">
+        <p class="msg warn rate-alert"><strong>Check the rate before every trade.</strong> The exchange rate is entered manually and is not updated automatically. An outdated rate gives the wrong lot size, so type in today's price of 1 EUR in the quote currency. The default values are only examples.</p>
       </div>
       <div>
         <label for="lotType">Lot size</label>
@@ -191,6 +207,21 @@
         Assumes a standard forex pair with 4 decimals (or 2 for JPY pairs). It does not cover indices, metals, crypto or commissions, and it does not account for spread or slippage. Your broker may use different contract sizes or minimum lots.
       </p>
     </details>
+  </section>
+
+  <section class="card" id="signup">
+    <h2>Get new tools and guides</h2>
+    <p class="lead-small">Occasional emails about risk management tools and new releases. No spam. You can unsubscribe at any time.</p>
+    <form id="signupForm" novalidate>
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="email" placeholder="you@example.com">
+      <label class="check">
+        <input id="consent" type="checkbox">
+        <span>I agree to receive occasional emails from this site and understand I can unsubscribe at any time.</span>
+      </label>
+      <button type="submit" id="submitBtn">Subscribe</button>
+      <p class="msg" id="formMsg"></p>
+    </form>
   </section>
 
   <footer>
@@ -289,6 +320,46 @@ $("quote").addEventListener("change", () => {
 document.querySelectorAll("input, select").forEach((el) => el.addEventListener("input", update));
 document.querySelectorAll("select").forEach((el) => el.addEventListener("change", update));
 update();
+
+// Email sign-up. Paste a form endpoint from a free form service (for example Formspree,
+// https://formspree.io/f/your-id) here. While it is empty, the form says sign-up is not open yet.
+const FORM_ENDPOINT = "";
+
+$("signupForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const email = $("email").value.trim();
+  const btn = $("submitBtn");
+  const formMsg = (text, cls) => { $("formMsg").textContent = text; $("formMsg").className = "msg " + cls; };
+
+  if (!FORM_ENDPOINT) {
+    formMsg("Sign-up is not open yet. Check back soon.", "warn");
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    formMsg("Please enter a valid email address.", "bad");
+    return;
+  }
+  if (!$("consent").checked) {
+    formMsg("Please tick the box to agree to receive emails.", "bad");
+    return;
+  }
+
+  btn.disabled = true;
+  try {
+    const res = await fetch(FORM_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ email, source: "position-size-calculator" }),
+    });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    $("signupForm").reset();
+    formMsg("Thanks! Please check your inbox.", "ok");
+  } catch (err) {
+    formMsg("Something went wrong. Please try again in a moment.", "bad");
+  } finally {
+    btn.disabled = false;
+  }
+});
 </script>
 </body>
 </html>
