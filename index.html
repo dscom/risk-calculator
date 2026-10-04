@@ -226,6 +226,7 @@
 
   <footer>
     This tool is for education and planning only. It is not financial advice and does not guarantee any result. Trading forex and leveraged products carries a high risk of losing your capital.
+    <br><a href="privacy.html">Privacy policy</a>
   </footer>
 </main>
 
@@ -349,7 +350,7 @@ $("signupForm").addEventListener("submit", async (event) => {
     const res = await fetch(FORM_ENDPOINT, {
       method: "POST",
       headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify({ email, source: "position-size-calculator" }),
+      body: JSON.stringify({ email, consent: true, source: "position-size-calculator" }),
     });
     if (!res.ok) throw new Error("HTTP " + res.status);
     $("signupForm").reset();
